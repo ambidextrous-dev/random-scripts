@@ -1,0 +1,49 @@
+//sample Jenkinsfile
+pipeline {
+	agent any
+    
+    environment {
+        BRANCH_NAME = "${GIT_BRANCH.split("/")[1]}"
+        COMMIT_HASH = "${GIT_COMMIT[0..7]}"
+        DOCKER_REGISTRY = "registry.company.com:443"
+    }
+
+    tools {
+        jdk 'JDK11'
+    }
+
+	stages {
+		stage('Gradle Build') {
+			steps {
+                echo BRANCH_NAME
+                echo COMMIT_HASH
+                sh './gradlew build'
+			}
+		}
+
+        stage('Docker Build Image') {
+            steps {
+                script {
+                    APP_NAME = "simple-springboot-app-${params.ENVIRONMENT}"
+
+                    def customImage = docker.build("$DOCKER_REGISTRY/$APP_NAME:$BRANCH_NAME-$COMMIT_HASH")
+                    customImage.push()
+                }   
+            } 
+        }
+		
+		// stage('Build Apps') {
+        //     steps {
+        //         sh 'docker compose -f  docker-compose.prod.yml build'
+        //     }
+        // }
+
+        // stage('Docker Build Image') {
+        //     steps {
+        //         sh 'docker tag $APP_IMAGE_NAME $DOCKER_REGISTRY/$APP_NAME:$BRANCH_NAME-$COMMIT_HASH'
+        //         sh 'docker push $DOCKER_REGISTRY/$APP_NAME:$BRANCH_NAME-$COMMIT_HASH'
+        //     } 
+        // }
+		
+	}
+}
