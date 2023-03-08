@@ -6,17 +6,17 @@ pipeline {
         BRANCH_NAME = "${GIT_BRANCH.split("/")[1]}"
         COMMIT_HASH = "${GIT_COMMIT[0..7]}"
         DOCKER_REGISTRY = "registry.company.com:443"
+        NAMESPACE = "appname"
     }
 
     tools {
+        //use Java 11 to compile the code
         jdk 'JDK11'
     }
 
 	stages {
 		stage('Gradle Build') {
 			steps {
-                echo BRANCH_NAME
-                echo COMMIT_HASH
                 sh './gradlew build'
 			}
 		}
@@ -44,6 +44,33 @@ pipeline {
         //         sh 'docker push $DOCKER_REGISTRY/$APP_NAME:$BRANCH_NAME-$COMMIT_HASH'
         //     } 
         // }
+
+         stage('Update Image Version') {
+            steps {
+                //TODO: temporary fix - version should come from application side - webapp
+                sh "cat k8s-manifests/on-prem/${params.ENVIRONMENT}/deployment.yml | grep image"
+                sh "sed -i \"s,IMAGE_NAME,$DOCKER_REGISTRY/$APP_NAME:$BRANCH_NAME-$COMMIT_HASH,\" k8s-manifests/on-prem/${params.ENVIRONMENT}/deployment.yml"
+                sh "cat k8s-manifests/on-prem/${params.ENVIRONMENT}/deployment.yml | grep image"
+            }
+        }
+
+        stage('Deploy to K8s') {
+            steps {
+                script {
+                    //TODO: temporary fix - test and uat in same cluster
+                    if("${params.ENVIRONMENT}" == 'uat') {
+                        NAMESPACE = "appname-uat"
+                    }
+
+                    def kubctl_str = "export KUBECONFIG=/opt/kubecfg/${params.ENVIRONMENT}-kubecfg && " +
+                        "kubectl config use-context ${params.ENVIRONMENT} && " +
+                        "kubectl apply -n $NAMESPACE -f  k8s-manifests/on-prem/${params.ENVIRONMENT}/ingress.yml &&" +
+                        "kubectl apply -n $NAMESPACE -f  k8s-manifests/on-prem/${params.ENVIRONMENT}/deployment.yml &&" +
+                        "kubectl apply -n $NAMESPACE -f  k8s-manifests/on-prem/${params.ENVIRONMENT}/service.yml"
+
+                   sh "${kubctl_str}"
+                }
+            }
 		
 	}
 }
