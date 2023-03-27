@@ -1,3 +1,3 @@
 ## vault-migration
 
-Migrate secrets from one Hashicorp Vault to Another Hashicorp Vault
+Migrate secrets from one Hashicorp Vault to another
