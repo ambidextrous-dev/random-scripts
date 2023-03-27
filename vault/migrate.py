@@ -20,20 +20,21 @@ def addKeyToVaultDict(key, value):
     else:
         vault_secrets[key] = [vault_secrets[key], value]
 
-def listSecrets(vault, mount_point, path):
+def listSecrets(vault, secret_engine, path):
     list_response = None
     try:
         list_response = vault.secrets.kv.v2.list_secrets(
             path=path,
-            mount_point=mount_point
+            mount_point=secret_engine
         )
     except hvac.exceptions.InvalidPath:
-        print("Empty Mount Point - ", mount_point, " - ", path)
+        #ignore secret engine if empty
+        print("Empty Secret Engine - ", secret_engine, " - ", path)
 
     return list_response
 
-def listAllVaultSecrets(vault, mount_point, path="/"):
-    list_response = listSecrets(vault, mount_point, path)
+def listAllVaultSecrets(vault, secret_engine, path="/"):
+    list_response = listSecrets(vault, secret_engine, path)
 
     if list_response is None:
         return
@@ -41,9 +42,9 @@ def listAllVaultSecrets(vault, mount_point, path="/"):
         keys = list_response['data']['keys']
         for key in keys:
             if key[-1] == "/":
-                listAllVaultSecrets(vault, mount_point, path + key)
+                listAllVaultSecrets(vault, secret_engine, path + key)
             else:
-                addKeyToVaultDict(mount_point, path + key)
+                addKeyToVaultDict(secret_engine, path + key)
 
 def listVaultSecretEngines(vault):
     _temp = []
@@ -54,20 +55,20 @@ def listVaultSecretEngines(vault):
     return _temp
 
 def getVaultSecrets(vault):
-    mount_points = []
+    secret_engines = []
 
-    # List All Mounts in the Vault
-    mount_points = listVaultSecretEngines(vault)
+    # List All Secret Engines in the Vault
+    secret_engines = listVaultSecretEngines(vault)
 
-    for x in range(len(mount_points)):
-        listAllVaultSecrets(vault, mount_points[x], "/")
+    for x in range(len(secret_engines)):
+        listAllVaultSecrets(vault, secret_engines[x], "/")
 
     return vault_secrets
 
-def readSecret(vault, mount_point, secret):
+def readSecret(vault, secret_engine, secret):
     read_response = vault.secrets.kv.v2.read_secret_version(
         path=secret,
-        mount_point=mount_point,
+        mount_point=secret_engine,
         raise_on_deleted_version=True
     )
     secret_value = read_response['data']['data']
@@ -80,18 +81,18 @@ def createSecretEngine(vault, path):
         path=path + "/"
     )
 
-def writeSecret(vault, mount_point, secretPath, secret):
+def writeSecret(vault, secret_engine, secretPath, secret):
     try:
-        # check if mount_point exists, if not create first
+        # check if secret engine exists, if not create first
         secretEngines = listVaultSecretEngines(vault)
 
-        if mount_point not in secretEngines:
-            createSecretEngine(vault, mount_point)
-            print("mount point created - ", mount_point)
+        if secret_engine not in secretEngines:
+            createSecretEngine(vault, secret_engine)
+            print("Secret Engine created - ", secret_engine)
 
         vault.secrets.kv.create_or_update_secret(
             path=secretPath,
-            mount_point=mount_point,
+            mount_point=secret_engine,
             secret=secret
         )
     except Exception as e:
