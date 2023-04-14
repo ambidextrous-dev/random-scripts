@@ -1,0 +1,1 @@
+This script can migrate all the repos (all the branches as well) from stash to bitbucket 
