@@ -1,0 +1,27 @@
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  annotations:
+    nginx.ingress.kubernetes.io/proxy-body-size: "0"
+    nginx.ingress.kubernetes.io/proxy-read-timeout: "600"
+    nginx.ingress.kubernetes.io/proxy-send-timeout: "600"
+    ingress.kubernetes.io/ssl-redirect: "true"
+  name: example-ingress
+  namespace: test
+spec:
+  ingressClassName: nginx
+  tls:
+  - hosts:
+    - example-dev.company.com
+    secretName: # To be created the secret in the ingress namespace
+  rules:
+  - host: example-dev.company.com
+    http:
+      paths:
+      - path: /api
+        pathType: Prefix
+        backend:
+          service:
+            name: example-app
+            port:
+              number: 8812

@@ -1,0 +1,35 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: example-app
+  namespace: test
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: example-app
+  template:
+    metadata:
+      labels:
+        app: example-app
+    spec:
+      containers:
+        - env:
+          - name: ENVIRONMENT
+            value: dev
+          - name: VAULT_ADDRESS
+            value: https://vault.company.com
+          - name: VAULT_PATH
+            value: /application-secrets/example-app/dev
+          - name: VAULT_TOKEN
+            value: VAULT_TOKEN_VALUE
+          image: IMAGE_NAME
+          imagePullPolicy: Always
+          name: example-app
+          ports:
+            - containerPort: 8081
+          resources: {}
+          stdin: true
+          tty: true
+      restartPolicy: Always
+status: {}

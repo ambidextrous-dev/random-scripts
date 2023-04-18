@@ -51,6 +51,13 @@ pipeline {
                 sh "cat k8s-manifests/on-prem/${params.ENVIRONMENT}/deployment.yml | grep image"
                 sh "sed -i \"s,IMAGE_NAME,$DOCKER_REGISTRY/$APP_NAME:$BRANCH_NAME-$COMMIT_HASH,\" k8s-manifests/on-prem/${params.ENVIRONMENT}/deployment.yml"
                 sh "cat k8s-manifests/on-prem/${params.ENVIRONMENT}/deployment.yml | grep image"
+            
+                sh "cat k8s-manifests/deployment.yml | grep vault"
+                withCredentials([string(credentialsId: 'vault.token', variable: 'vaultToken')]) {
+                    sh "sed -i \"s,VAULT_TOKEN_VALUE,$vaultToken,\" ./k8s-manifests/deployment.yml"
+                }
+                sh "cat k8s-manifests/deployment.yml | grep vault"
+            
             }
         }
 
