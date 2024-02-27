@@ -1,6 +1,6 @@
 ## Lambdas
 
-I created these lambdas because for a scenario, I wanted to keep the isntances created by an ASG out of the same pool of private IP's. 
+I created these lambdas for a specific scenario, I wanted to keep the instances created by an ASG out of the same pool of private IP's. 
 
 When a new instance is spun up/terminated, the ASG fires a lifecycle hook. The lifecyle hook is caught by Eventbridge which then further invokes the lambdas. The lambdas then attach/detach the ENI's. In my case, I further updated the startup lambda in a way that I do not need to use shutdown lambda any more. 
 
